@@ -10,6 +10,7 @@
 	<link href="jquery-ui/css/ui-lightness/jquery-ui-1.10.2.custom.css" rel="stylesheet" type="text/css">
 	<style>
 		.draggable { width: 200px; height: 200px; padding: 0.5em; float: left; margin: 10px 10px 10px 0; background-color: grey}
+		.box { width: 200px; height: 200px; padding: 0.5em; float: left; margin: 10px 10px 10px 0; background-color: grey}
   		#container { width: 300px; height: 900px; padding: 0.5em; float: right; margin: 10px; background-color: lightblue}
 	</style>
 	<script>
@@ -58,24 +59,51 @@
 		   }	
  	   });
 
+	    var CopyBoxView = Backbone.View.extend({
+		initialize: function(){
+			this.render();
+		},
+
+		render: function(){
+			var self = this;
+			var htmlString = "<div class='box'><button id='btn'>Remove</button></div>";
+			var template = _.template(htmlString,{});
+			this.$el.html($(template).css('background-color',this.model.get("color")));
+			console.log(this.$el.find("button#btn").text());
+			return this;
+		},
+
+		events: {
+			"click button#btn": "remove"
+		},
+
+		remove: function(){
+			//alert("Hey you!!"+JSON.stringify(this.model));
+			this.model.set({isInContainer:false});
+			this.$el.remove();
+		}
+		
+	    });
+
 	    var ContainerView = Backbone.View.extend({
 		el: $("#container"),
+
+		initialize: function(){
+			return this;
+		},
 
 		events: {
 		    "drop":"dropped"
 		},
 	
 		dropped: function(event, ui){
-			console.log(ui.draggable.html());
 			var self = this;
 			var elemId = ui.draggable.prop("id");
-			var targetElem = self.model.find(function(elem){ return elem.get("viewId") == elemId });
-			var copyElem = $("<div class='draggable'></div>");
-			copyElem.html(ui.draggable.html()).css('background-color',targetElem.get("color"));
-			copyElem.appendTo(this.$el.find("#elemContainer"));
+			var targetElem = self.collection.find(function(elem){ return elem.get("viewId") == elemId });
+			var copyBox = new CopyBoxView({model: targetElem});
+			copyBox.$el.appendTo(this.$el.find("#elemContainer"));
 			targetElem.inContainer();
 		}
-
 	    });
 
 	    var Boxes = Backbone.Collection.extend({
@@ -91,7 +119,7 @@
 		boxes.add(modelBox);	
 	    });
 
-	    var container = new ContainerView({model: boxes});
+	    var container = new ContainerView({collection: boxes});
 	    window.container = container;
 	    window.boxCollection = boxes;
 	    window.viewCollection = boxViewArray;
